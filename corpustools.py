@@ -95,8 +95,8 @@ class WebCorpusBuilder(object):
 
         :param page: (str) a page URL to crawl
         """
-        res = urllib.urlopen(page)
         try:
+            res = urllib.urlopen(page)
             data = res.read().decode("utf-8")
             self.visitor(page)
             if self.probefilter(data):
@@ -104,9 +104,7 @@ class WebCorpusBuilder(object):
                 for split in self.splitter(self.parser.resdata):
                     if self.datafilter(split):
                         self.writer(split)
-        except UnicodeDecodeError as e:
-            print('=== %s at %s' % (e, page[0:30]))
-        except UnicodeError as e:
+        except e:
             print('=== %s at %s' % (e, page[0:30]))
 
 
