@@ -107,9 +107,9 @@ class WebCorpusBuilder(object):
         except KeyboardInterrupt:
             import sys
             sys.exit(0)
-        except:
-            import sys
-            e = sys.exc_info()[0]
+        except UnicodeDecodeError as e:
+            print('=== %s at %s' % (e, page))
+        except UnicodeError as e:
             print('=== %s at %s' % (e, page))
 
 
