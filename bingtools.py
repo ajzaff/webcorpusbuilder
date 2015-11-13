@@ -31,7 +31,8 @@ def bingsearch(query, quotes=False, language=None, results=50):
     wcb.urlfilter = lambda u:\
         not re.match(r'^.*//.*bing.com', u) and\
         not re.match(r'^.*//.*microsoft.com', u) and\
-        not re.match(r'^.*//.*microsofttranslator.com', u)
+        not re.match(r'^.*//.*microsofttranslator.com', u) and\
+        not re.match(r'^.*//.*dictionary.*', u)
     wcb.writer = lambda t: None
 
     i = 0
