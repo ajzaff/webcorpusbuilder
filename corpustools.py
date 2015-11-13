@@ -104,8 +104,10 @@ class WebCorpusBuilder(object):
                 for split in self.splitter(self.parser.resdata):
                     if self.datafilter(split):
                         self.writer(split)
-        except UnicodeDecodeError:
-            print('error could not decode utf-8 at %s' % page[0:30])
+        except UnicodeDecodeError as e:
+            print('%s at %s' % (e, page[0:30]))
+        except UnicodeError as e:
+            print('%s at %s' % (e, page[0:30]))
 
 
 #if __name__ == '__main__':
