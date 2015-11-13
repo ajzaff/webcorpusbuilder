@@ -81,6 +81,7 @@ class WebCorpusBuilder(object):
         if not hasattr(pages, '__iter__'):
             pages = [pages]
         for page in pages:
+            self.crawler.setpage(page)
             self.crawl(page)
 
     def crawl(self, page):
@@ -95,37 +96,36 @@ class WebCorpusBuilder(object):
 
         :param page: (str) a page URL to crawl
         """
-        if self.urlfilter(page):
-            res = urllib.urlopen(page)
-            data = res.read().decode("utf-8")
-            self.visitor(page)
-            if self.probefilter(data):
-                self.parser.feed(data)
-                for split in self.splitter(self.parser.resdata):
-                    if self.datafilter(split):
-                        self.writer(split)
+        res = urllib.urlopen(page)
+        data = res.read().decode("utf-8")
+        self.visitor(page)
+        if self.probefilter(data):
+            self.parser.feed(data)
+            for split in self.splitter(self.parser.resdata):
+                if self.datafilter(split):
+                    self.writer(split)
 
 
-if __name__ == '__main__':
-    import re
-
-    sents = []
-
-    def writer(x):
-        global sents
-        x = x.replace('\n', ' ')
-        x = re.sub(r'(\[.*\])|(\(.*\))', ' ', x)
-        x = nltk.tokenize.word_tokenize(x)
-        sents.append(x)
-
-    import nltk
-    wcb = WebCorpusBuilder()
-    wcb.splitter = nltk.tokenize.sent_tokenize
-    wcb.writer = writer
-    wcb.feed('https://en.wikipedia.org/wiki/Cats')
-
-    for x in wcb.crawler.pages:
-        print(x)
-
-    #for x in sents:
-    #    print(x)
+#if __name__ == '__main__':
+#    import re
+#
+#    sents = []
+#
+#    def writer(x):
+#        global sents
+#        x = x.replace('\n', ' ')
+#        x = re.sub(r'(\[.*\])|(\(.*\))', ' ', x)
+#        x = nltk.tokenize.word_tokenize(x)
+#        sents.append(x)
+#
+#    import nltk
+#    wcb = WebCorpusBuilder()
+#    wcb.splitter = nltk.tokenize.sent_tokenize
+#    wcb.writer = writer
+#    wcb.feed('https://en.wikipedia.org/wiki/Cats')
+#
+#    for x in wcb.crawler.pages:
+#        print(x)
+#
+#    #for x in sents:
+#    #    print(x)

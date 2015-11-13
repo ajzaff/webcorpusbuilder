@@ -1,4 +1,5 @@
 from HTMLParser import HTMLParser as BaseParser
+import urltools
 
 
 class HTMLParser(BaseParser):
@@ -24,8 +25,14 @@ class HTMLParser(BaseParser):
         active = self.wcb.tagfilter(tag, self.wcb.crawler)
         self.wcb.crawler.tags.append({'tag': tag, 'active': active})
         if tag == 'a':
-            if 'href' in attrs:
-                self.wcb.crawler.push(attrs['href'])
+            if 'href' in attrs: # Normalize the URL and push it on the queue.
+                href = attrs['href']
+                base = self.wcb.crawler.url.netloc
+                path = self.wcb.crawler.url.path
+                page = urltools.urlfmtdefaults(
+                    href, defaulthost=base, defaultpath=path)
+                if self.wcb.urlfilter(page):
+                    self.wcb.crawler.push(page)
 
     def handle_endtag(self, tag):
         """Handles the end of a tag.

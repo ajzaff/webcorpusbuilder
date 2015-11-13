@@ -10,8 +10,15 @@ class CrawlerState(object):
         self.pages = collections.deque()
         self.tags = collections.deque()
         self.url = None
-        self.host = None
         self.page = None
+
+    def setpage(self, page):
+        """Sets the page the crawler is pointing at.
+
+        :param page: (str) a page URL
+        """
+        self.url = urlparse.urlparse(page)
+        self.page = page
 
     def push(self, page):
         """Appends a page to the deque.
@@ -23,17 +30,10 @@ class CrawlerState(object):
     def pop(self):
         """Removes and returns a page from the deque.
 
-        Updates the internal state of the crawler to reflect the new web page.
         :return (str): the next page
         """
         self.page = self.pages.pop()
-        self.page = urltools.urlfmtdefaults(
-            self.page,
-            defaultscheme='http',
-            defaulthost=self.host)
-        self.url = urlparse.urlparse(self.url)
-        self.host = self.url.netloc
-        return self.url
+        return self.page
 
     def isactive(self):
         """Returns whether the crawler is active.
