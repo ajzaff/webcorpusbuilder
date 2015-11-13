@@ -1,44 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-from HTMLParser import HTMLParser as BaseParser
-import urllib, urlparse
-import collections
-import re
-
-
-class URL(object):
-    """Class is mostly for @classmethods relating to URLs """
-    
-    @classmethod
-    def urlmatch(url,
-        schemefilter=lambda s: True,
-        weblocfilter=lambda w: True,
-        pathfilter=lambda p: True,
-        queryfilter=lambda q: True,
-        fragfilter=lambda f: True
-        ):
-        """Tests whether the URL matches the specified filters.
-        
-        A URL is represented as:
-            "[scheme] : [webloc]           [path] [query] [frag]"
-        e.g.:
-              http    :  www.example.com:80 /      ?q=cat  #anchor 
-        
-        :param schemefilter: (function) filter the scheme part
-        :param weblocfilter: (function) filter the website part
-        :param pathfilter: (function) filter the path part
-        :param queryfilter: (function) filter the query part
-        :param fragfilter: (function) filter the fragment part
-        :returns: (bool) ``True'' if matches ; ``False'' otherwise
-        """
-        res = urlparse.urlparse(url)
-        return schemefilter(res.scheme) and
-            weblocfilter(res.netloc) and
-            pathfilter(res.path) and
-            queryfilter(res.query) and
-            fragfilter(res.fragment)
-        
+from parsertools import HTMLParser
+from crawlertools import CrawlerState
+import filtertools
+import urllib
 
 
 class WebCorpusBuilder(object):
@@ -48,146 +14,113 @@ class WebCorpusBuilder(object):
     
     URL BASED FILTERS =====================================================
     
-    schemefilter    Filter the scheme part of a URL (e.g. http, https)
-                    (default: _ => True)
-                        
-    weblocfilter    Filter the website of the URL (e.g. www.example.com).
-                    This includes the full path to the website including a
-                    Possible port number (e.g. www.example.com:80), though 
-                    This usually is not included. (default: _ => True)
-                        
-    pathfilter      Filter the path of a URL (e.g. /en/forum/).
-                    This often can be used for sites where the URL path
-                    Is indicative of the type of page (e.g. Wiki pages)
-                    (default: _ => True)
-                        
-    queryfilter     Filter the query part of a URL (e.g. ?q=cat&s=kitten).
-                    The query string is further parsed into a dictionary.
-                    (default: _ => True)
-                        
-    fragfilter      Filter the fragment or anchor of a URL (e.g. #anchor) 
-                    (default: _ => True)
+    urlfilter       Filter a URL (default: _ => True)
+  
 
-                    
     DOCUMENT BASED FILTERS ================================================
-                    
-    tagfilter       Filter lowercased tag names in the document (e.g. body)
-                    The second parameter to the filter is its associated
-                    Attributes dictionary. (default: _, _ => True)
+
+    tagfilter       Filter lowercased tag names in the document (e.g. body).
+                    (default: content tags only see: ``filtertools.tagfilter'')
                     
     probefilter     Filter entire pages before recursively scraping links.
                     This is usually important to avoid fast growth of Web
                     Pages in the queue.  You might think of something
                     Creative to put here but usually less is more.
+                    If you are collecting web pages in a specific language
+                    This could be a good place to apply the white-list.
                     (default: _ => True)
-    
-    splitfilter     Filter entire pages and return a list of matches.
-                    One could use ``re.findall'' to split results ;
-                    Or, one could split the string on sentences using
-                    The NLTK module (e.g.: ``nltk.tokenize.sent_tokenize'')
-                    (default: _ => re.split(r'\n', _))
                     
     datafilter      Filter each element of the ``splitfilter''.
                     Your implementation should return a truth-value:
                     ``True'' if the data should be accepted ;
                     ``False'' otherwise. (default _ => True)
-                    
-    writefilter     Write data out to a file or data structure in
+
+    TEXT PROCESSORS I/O ===================================================
+
+    splitter        Split entire pages and return a list of matches.
+                    One could use ``re.findall'' to split results ;
+                    Or, one could split the string on sentences using
+                    The NLTK module (e.g.: ``nltk.tokenize.sent_tokenize'')
+                    (default: _ => [_])
+
+    writer          Write data out to a file or data structure in
                     Any way that you wish.  This filter may return
                     A ``None'' type since its return value is never
                     Used. By default, the write filter prints the
                     Scrape output to stdout. (default _ => print(_))
+                    
+                    
+    TRAVERSAL FUNCTIONS ===================================================
+
+    visitor         Visitor triggered when visiting a webpage.
+                    Function takes the URL of the page as argument.
+                    Returns ``True'' if the web page should be scraped.
+                    (default: _ => None)
+
     """
     
     def __init__(self):
-        """Creates a new spider parser"""
-        self.schemefilter = lambda p: True
-        self.weblocfilter = lambda w: True
-        self.pathfilter   = lambda p: True
-        self.queryfilter  = lambda q: True
-        self.fragfilter   = lambda f: True
-        self.tagfilter    = lambda t, a: True
-        self.probefilter  = lambda t: True
-        self.splitfilter  = lambda p: re.split(r'\n', p)
-        self.datafilter   = lambda d: True
-        self.writefilter  = lambda d: print(d)
-        self.htmlparser   = HTMLParser().init(self)
-        self.pagequeue    = collections.deque()
-    
-    def _urlmatch(self, url):
-        """Sugar to match a URL based on this web corpus builder.
-        
-        :param url: (str) a URL to match
-        """
-        return URL.urlmatch(url,
-            schemefilter=self.schemefilter,
-            weblocfilter=self.weblocfilter,
-            pathfilter=self.pathfilter,
-            queryfilter=self.queryfilter,
-            fragfilter=self.fragfilter)
-    
-    def crawl(url, whilefilter=lambda wcb: len(wcb.pagequeue) > 0):
-        """Begins crawling of the web.
-        
-        It will continue to crawl the web until the given termination conditions in ``termfilter'' are met.
-        
-        :param url: (str) a URL from which to start crawing
-        :param whilefilter: (function) returns ``False'' to stop crawling
-        """
-        self.pagequeue.append(url)
-        while whilefilter(self):
-            url = self.pagequeue.pop()
-            if self._urlmatch(url):
-                res = urllib.urlopen(url)
-                data = res.readall().decode("utf-8")
-                if self.probefilter(data):
-                    self.htmlparser.feed(data)
+        """Creates a new Web Corpus Builder. """
+        self.urlfilter = lambda p: True
+        self.tagfilter = filtertools.tagfilter
+        self.probefilter = lambda t: True
+        self.datafilter = lambda d: True
+        self.visitor = lambda p: None
+        self.splitter = lambda p: [p]
+        self.writer = lambda d: print(d)
+        self.parser = HTMLParser(self)
+        self.crawler = CrawlerState()
 
+    def feed(self, pages):
+        """Feeds a set of pages to the crawler and crawls them.
+        :param pages:
+        :return:
+        """
+        if not hasattr(pages, '__iter__'):
+            pages = [pages]
+        for page in pages:
+            self.crawl(page)
 
-class HTMLParser(BaseParser):
-    """Parses raw HTML and handles scraped text based on the policies defined in a ``WebCorpusBuilder'' object. """
-    
-    def init(self, webcorpusbuilder):
-        """Initializes this parser.
-        
-        :param webcorpusbuilder: (WebCorpusBuilder)
-        """
-        self.wcb         = webcorpusbuilder
-        self.handledata  = collections.deque([True])
-        return self
-        
-    def handle_starttag(self, tag, attrs):
-        """Handles the start of an HTML tag.
-        
-        :param tag: (str) a lowercased HTML tag name
-        :param attrs: (dict) an attribute dictionary mapping,
-            attribute name => attribute value
-        """
-        attrs = dict(attrs)
-        handleon = self.wcb.tagfilter(tag, attrs)
-        self.handledata.append(bool(handleon))
-        print 'start %s' % tag
-        if tag == 'a':
-            attrs = dict(attrs)
-            if 'href' in attrs:
-                self.pagequeue.append(attrs['href'])
-    
-    def handle_endtag(self, tag):
-        """Handles the end of a tag.
-        
-        :param tag: (str) a lowercased HTML tag name
-        """
-        print 'end %s' % tag
-        self.handledata.pop()
+    def crawl(self, page):
+        """Initiates crawling of the web once.
 
-    def handle_data(self, data):
-        """Handles text data within an HTML tag.
-        
-        :param 
+        Match the URL against preliminary filters
+        First match the URL itself, if this passes,
+        Read the contents of the page, then call
+        The visit filter. If this passes, run the
+        probe filter. If all these pass, then
+        Finally, we feed text data to the parser.
+
+        :param page: (str) a page URL to crawl
         """
-        if self.handledata[-1]:
-            pass
+        if self.urlfilter(page):
+            res = urllib.urlopen(page)
+            data = res.read().decode("utf-8")
+            self.visitor(page)
+            if self.probefilter(data):
+                self.parser.feed(data)
+                for split in self.splitter(self.parser.resdata):
+                    if self.datafilter(split):
+                        self.writer(split)
 
 
 if __name__ == '__main__':
-    pass
+    import re
+
+    sents = []
+
+    def writer(x):
+        global sents
+        x = x.replace('\n', ' ')
+        x = re.sub(r'(\[.*\])|(\(.*\))', ' ', x)
+        x = nltk.tokenize.word_tokenize(x)
+        sents.append(x)
+
+    import nltk
+    wcb = WebCorpusBuilder()
+    wcb.splitter = nltk.tokenize.sent_tokenize
+    wcb.writer = writer
+    wcb.feed('https://en.wikipedia.org/wiki/Cats')
+
+    for x in sents:
+        print(x)
