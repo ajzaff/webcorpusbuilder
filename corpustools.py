@@ -104,6 +104,9 @@ class WebCorpusBuilder(object):
                 for split in self.splitter(self.parser.resdata):
                     if self.datafilter(split):
                         self.writer(split)
+        except KeyboardInterrupt:
+            import sys
+            sys.exit(0)
         except:
             import sys
             e = sys.exc_info()[0]
