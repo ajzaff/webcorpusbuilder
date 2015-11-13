@@ -56,8 +56,7 @@ class WebCorpusBuilder(object):
 
     visitor         Visitor triggered when visiting a webpage.
                     Function takes the URL of the page as argument.
-                    Returns ``True'' if the web page should be scraped.
-                    (default: _ => None)
+                    Return value is ignored (default: _ => None).
 
     """
     
@@ -97,13 +96,16 @@ class WebCorpusBuilder(object):
         :param page: (str) a page URL to crawl
         """
         res = urllib.urlopen(page)
-        data = res.read().decode("utf-8")
-        self.visitor(page)
-        if self.probefilter(data):
-            self.parser.feed(data)
-            for split in self.splitter(self.parser.resdata):
-                if self.datafilter(split):
-                    self.writer(split)
+        try:
+            data = res.read().decode("utf-8")
+            self.visitor(page)
+            if self.probefilter(data):
+                self.parser.feed(data)
+                for split in self.splitter(self.parser.resdata):
+                    if self.datafilter(split):
+                        self.writer(split)
+        except UnicodeDecodeError:
+            print('error could not decode utf-8 at %s' % page[0:30])
 
 
 #if __name__ == '__main__':

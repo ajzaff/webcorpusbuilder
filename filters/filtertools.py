@@ -1,9 +1,9 @@
-tag_blacklist = [
-    'base', 'meta', 'link'
+tag_blacklist = {
+    'base', 'meta', 'link',
     'style', 'script', 'br',
     'hr', 'img', 'map', 'area',
     'object', 'param', 'col',
-    'input']
+    'input', 'head'}
 
 
 def tagfilter(tag, crawler):
