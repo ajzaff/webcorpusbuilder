@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-from parsertools import HTMLParser
-from crawlertools import CrawlerState
-import filtertools
+
 import urllib
+
+from crawlertools import CrawlerState
+from filters import filtertools
+from parsertools import HTMLParser
 
 
 class WebCorpusBuilder(object):
@@ -122,5 +124,8 @@ if __name__ == '__main__':
     wcb.writer = writer
     wcb.feed('https://en.wikipedia.org/wiki/Cats')
 
-    for x in sents:
+    for x in wcb.crawler.pages:
         print(x)
+
+    #for x in sents:
+    #    print(x)

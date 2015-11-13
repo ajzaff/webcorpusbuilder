@@ -1,13 +1,12 @@
 import urlparse
 
 
-def urlmatch(url,
-             schemefilter=lambda s: True,
-             weblocfilter=lambda w: True,
-             pathfilter=lambda p: True,
-             queryfilter=lambda q: True,
-             fragfilter=lambda f: True
-             ):
+def urlmatch(
+        url, schemefilter=lambda s: True,
+        weblocfilter=lambda w: True,
+        pathfilter=lambda p: True,
+        queryfilter=lambda q: True,
+        fragfilter=lambda f: True):
     """Tests whether the URL matches the specified filters.
 
     A URL is represented as:
@@ -29,13 +28,12 @@ def urlmatch(url,
         fragfilter(res.fragment)
 
 
-def urlstem(url,
-            clipscheme=True,
-            clipwebloc=False,
-            clippath=False,
-            clipquery=True,
-            clipfrag=True
-            ):
+def urlstem(
+        url, clipscheme=True,
+        clipwebloc=False,
+        clippath=False,
+        clipquery=True,
+        clipfrag=True):
     """Stems the URL by clipping certain parts of it.
 
     :param url: (str) a URL
@@ -47,7 +45,7 @@ def urlstem(url,
     :return: (str) a processed URL string
     """
     res = urlparse.urlparse(url)
-    res = urlparse.ParseResult(
+    res = urlparse.ParseResult.__new__(
         '' if clipscheme else res.scheme,
         '' if clipwebloc else res.netloc,
         '' if clippath else res.path, '',
@@ -56,11 +54,9 @@ def urlstem(url,
     return urlparse.urlunparse(res)
 
 
-def urlfmtdefaults(url,
-                   defaultscheme='http',
-                   defaulthost=None,
-                   defaultpath=None
-                   ):
+def urlfmtdefaults(
+        url, defaultscheme='http',
+        defaulthost=None):
     """Appends defaults to a URL if missing.
 
     :param url: (str)
@@ -68,17 +64,11 @@ def urlfmtdefaults(url,
     :param defaulthost: (str)
     """
     res = urlparse.urlparse(url)
+    scheme = defaultscheme if not res.scheme else res.scheme
+    netloc = defaulthost if not res.hostname else res.hostname
+
     res = urlparse.ParseResult(
-        defaultscheme if res.scheme == '' else res.scheme,
-        res.netloc,
-        res.path, '',
-        res.query,
-        res.fragment)
-    url = urlparse.urlunparse(res)
-    res = urlparse.urlparse(url)
-    res = urlparse.ParseResult(
-        res.scheme,
-        defaulthost if res.netloc == '' else res.netloc,
+        scheme, netloc,
         res.path, '',
         res.query,
         res.fragment)
