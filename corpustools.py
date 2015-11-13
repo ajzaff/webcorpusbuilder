@@ -104,8 +104,10 @@ class WebCorpusBuilder(object):
                 for split in self.splitter(self.parser.resdata):
                     if self.datafilter(split):
                         self.writer(split)
-        except e:
-            print('=== %s at %s' % (e, page[0:30]))
+        except:
+            import sys
+            e = sys.exc_info()[0]
+            print('=== %s at %s' % (e, page))
 
 
 #if __name__ == '__main__':
